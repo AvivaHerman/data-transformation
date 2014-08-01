@@ -19,6 +19,8 @@ case class Log(path: String) {
 
   def serverErrorRate = numberOfServerErrors.toDouble / numberOfErrorStatus.toDouble
 
+  def clientErrorRate = numberOfClientErrors.toDouble / numberOfErrorStatus.toDouble
+
   def numberOfRequests = requests.length
 
   def sumSizeOfResponses = requests.map(_.resultSize.get.toInt).filter(_ != None).sum

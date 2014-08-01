@@ -25,4 +25,6 @@ case class LogEntry(entryStr: String) {
     (state: State, str: String) => State(state.generateNewResult(str), state.calculateNewBalance(str))
   }.result.map(stripUnnecessaryChars)
 
+  def getRequest = Request(this.parse)
+
 }

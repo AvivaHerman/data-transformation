@@ -26,7 +26,9 @@ class LogTest extends SpecificationWithJUnit {
       logger.errorRate must_== 0.2
     }
 
-    
+    "Calculate server error rate" in new Context {
+      logger.serverErrorRate must_== 0.5
+    }
 
   }
 

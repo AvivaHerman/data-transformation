@@ -5,10 +5,17 @@ package com.example
  */
 case class Log(path: String) {
 
-  val requests = scala.io.Source.fromFile(path).getLines map (LogEntry(_).getRequest)
+  def requests = scala.io.Source.fromFile(path).getLines map (LogEntry(_).getRequest)
 
-  def getNumberOfRequests = requests.length
+  def groupByStatus =
+    requests.map(_.resultStatus).filter(status => status != UnknownData).toList.groupBy(_.get.head)
 
-  def sumSizeOfResponses = requests.map(req => req.resultSize.get.toInt).filter(_ != None).sum
+  private def errorStatus = groupByStatus.get('4').getOrElse(Seq()).length + groupByStatus.get('5').getOrElse(Seq()).length
+
+  def numberOfRequests = requests.length
+
+  def sumSizeOfResponses = requests.map(_.resultSize.get.toInt).filter(_ != None).sum
+
+  def errorRate = errorStatus.toDouble / numberOfRequests.toDouble
 
 }

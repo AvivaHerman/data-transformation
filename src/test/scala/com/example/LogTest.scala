@@ -15,12 +15,18 @@ class LogTest extends SpecificationWithJUnit {
   "Log" should {
 
     "Count all requests" in new Context {
-      logger.getNumberOfRequests must_== 10
+      logger.numberOfRequests must_== 10
     }
 
     "Sum size of all responses" in new Context {
       logger.sumSizeOfResponses must_== 249431
     }
+
+    "Calculate error rate for all requests" in new Context { //TODO: what about req with missin status?
+      logger.errorRate must_== 0.2
+    }
+
+    
 
   }
 

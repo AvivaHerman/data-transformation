@@ -6,7 +6,7 @@ package com.example
 class Field {
   val fields = Seq("Host", "Identifier", "UserId", "Date", "ClientRequest", "ResultStatus", "ResultSize", "Referrer", "UserAgent")
 
-  def get(field: String, fieldNum: Int) = {
+  def create(field: String, fieldNum: Int) =
     if (field == "-") UnknownData
     else fieldNum match {
       case 1 => Host(field)
@@ -14,11 +14,22 @@ class Field {
       case 3 => UserId(field)
       case 4 => Date(field)
       case 5 => ClientRequest(field)
-      case 6 => ResultStatus(field.toInt)
-      case 7 => ResultSize(field.toInt)
+      case 6 => ResultStatus(field)
+      case 7 => ResultSize(field)
       case 8 => Referrer(field)
       case 9 => UserAgent(field)
     }
+
+  def get = this match {
+    case Host(ip) => ip
+    case Identifier(id) => id
+    case UserId(id) => id
+    case Date(date) => date
+    case ClientRequest(req) => req
+    case ResultStatus(status) => status
+    case ResultSize(size) => size
+    case UserAgent(agent) => agent
+    case _ => ""
   }
 }
 
@@ -32,9 +43,9 @@ case class Date(date: String) extends Field
 
 case class ClientRequest(req: String) extends Field
 
-case class ResultStatus(status: Int) extends Field
+case class ResultStatus(status: String) extends Field
 
-case class ResultSize(size: Int) extends Field
+case class ResultSize(size: String) extends Field
 
 case class Referrer(ref: String) extends Field
 

@@ -18,6 +18,10 @@ class LogTest extends SpecificationWithJUnit {
       logger.getNumberOfRequests must_== 10
     }
 
+    "Sum size of all responses" in new Context {
+      logger.sumSizeOfResponses must_== 249431
+    }
+
   }
 
 

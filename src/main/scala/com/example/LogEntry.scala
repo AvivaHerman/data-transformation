@@ -27,7 +27,7 @@ case class LogEntry(entryStr: String) {
 
   def convertToFields(strings: Seq[String]) = for {
     i <- 0 until strings.length
-  } yield (new Field).get(strings(i), i + 1)
+  } yield (new Field).create(strings(i), i + 1)
 
   def getRequest = Request(convertToFields(this.parse): _*)
 

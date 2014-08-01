@@ -9,12 +9,14 @@ import org.specs2.specification.Scope
 class LogTest extends SpecificationWithJUnit {
 
   trait Context extends Scope {
-    val logger = Log("/Users/Aviva_Herman/Downloads/request.100th.log")
+    val logger = Log("/Users/Aviva_Herman/dev/dataTrans/src/test/scala/com/example/logger_sample.txt")
   }
 
   "Log" should {
 
-    "get all requests" in new Context {}
+    "Count all requests" in new Context {
+      logger.getNumberOfRequests must_== 10
+    }
 
   }
 

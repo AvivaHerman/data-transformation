@@ -25,6 +25,10 @@ case class LogEntry(entryStr: String) {
     (state: State, str: String) => State(state.generateNewResult(str), state.calculateNewBalance(str))
   }.result.map(stripUnnecessaryChars)
 
-  def getRequest = Request(this.parse)
+  def convertToFields(strings: Seq[String]) = for {
+    i <- 0 until strings.length
+  } yield (new Field).get(strings(i), i + 1)
+
+  def getRequest = Request(convertToFields(this.parse): _*)
 
 }

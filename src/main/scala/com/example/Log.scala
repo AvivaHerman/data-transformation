@@ -29,16 +29,18 @@ case class Log(path: String) {
 
   def errorRate(requests: Seq[Request]) = numberOfErrorStatus(requests).toDouble / numberOfRequests(requests).toDouble
 
-  def topTenURLs = allRequests.filter(req => unknownData(req.clientRequest)).map(_.clientRequest.get).groupBy(identity).toList.sortBy(_._2.length).takeRight(10).reverse
+  def topTenURLs = allRequests.filter(req => unknownData(req.clientRequest)).map(_.clientRequest.get).groupBy(identity).toList.map{ case (url, list) => (url, list.length) }.sortBy(_._2).takeRight(10).reverse
 
   def statisticsOfTopTen = {
     for {
       currentUrl <- topTenURLs
       url = currentUrl._1
-      reqCount = currentUrl._2.length
+      reqCount = currentUrl._2
       urlRequests = allRequests.filter(_.clientRequest.get == url)
       respSize = sumSizeOfResponses(urlRequests)
       urlErrorRate = errorRate(urlRequests)
     } yield s"""$url\t$reqCount\t$respSize\t$urlErrorRate"""
   } mkString("\n")
+
+
 }

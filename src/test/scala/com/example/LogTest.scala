@@ -35,11 +35,11 @@ class LogTest extends SpecificationWithJUnit {
     }
 
     "find top 10 URLs" in new Context {
-      logger.statisticsOfTopTen must_== s"""/\t8\t230136\t0.25\n/wpad.dat\t2\t0\t0.0\n/_api/dynamicmodel\t1\t19295\t0.0"""
+      logger.statistics(logger.topTenURLs, req => req.clientRequest.get) must_== s"""/\t8\t230136\t0.25\n/wpad.dat\t2\t0\t0.0\n/_api/dynamicmodel\t1\t19295\t0.0"""
     }
 
     "most common IP" in new Context {
-      logger.statisticsOfMostCommonIP must_== s"""93.89.139.5\t2\t0\t0.0"""
+      logger.statistics(logger.mostCommonIp, req => req.host.get) must_== s"""93.89.139.5\t2\t0\t0.0"""
     }
 
   }

@@ -29,31 +29,22 @@ case class Log(path: String) {
 
   def errorRate(requests: Seq[Request]) = numberOfErrorStatus(requests).toDouble / numberOfRequests(requests).toDouble
 
-  def topTenURLs = allRequests.filter(req => unknownData(req.clientRequest)).map(_.clientRequest.get).groupBy(identity).toList.map { case (url, list) => (url, list.length)}.sortBy(_._2).takeRight(10).reverse
+  private def groupByProperty(getProperty: Request => Field): List[(String, Int)] =
+    allRequests.filter(req => unknownData(getProperty(req))).map(getProperty(_).get).groupBy(identity).toList.map { case (property, list) => (property, list.length)}.sortBy(_._2)
 
-  def statisticsOfTopTen = {
+  def topTenURLs = groupByProperty(req => req.clientRequest).takeRight(10).reverse
+
+  def mostCommonIp = List(groupByProperty(req => req.host).last)
+
+  def statistics(list: List[(String, Int)], requestField: Request => String) = {
     for {
-      currentUrl <- topTenURLs
-      url = currentUrl._1
-      reqCount = currentUrl._2
-      urlRequests = allRequests.filter(_.clientRequest.get == url)
-      respSize = sumSizeOfResponses(urlRequests)
-      urlErrorRate = errorRate(urlRequests)
-    } yield s"""$url\t$reqCount\t$respSize\t$urlErrorRate"""
+      current <- list
+      element = current._1
+      reqCount = current._2
+      elementRequests = allRequests.filter(requestField(_) == element)
+      respSize = sumSizeOfResponses(elementRequests)
+      elementErrorRate = errorRate(elementRequests)
+    } yield s"""$element\t$reqCount\t$respSize\t$elementErrorRate"""
   } mkString ("\n")
-
-  def mostCommonIp = allRequests.filter(req => unknownData(req.host)).map(_.host.get).groupBy(identity).toList.sortBy(_._2.length).last
-
-  def statisticsOfMostCommonIP = {
-    for {
-      currentIp <- List(mostCommonIp)
-      ip = currentIp._1
-      reqCount = currentIp._2.length
-      ipRequests = allRequests.filter(_.host.get == ip)
-      respSize = sumSizeOfResponses(ipRequests)
-      ipErrorRate = errorRate(ipRequests)
-    } yield s"""$ip\t$reqCount\t$respSize\t$ipErrorRate"""
-  } mkString ("\n")
-
 
 }

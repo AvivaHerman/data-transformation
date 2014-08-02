@@ -15,23 +15,27 @@ class LogTest extends SpecificationWithJUnit {
   "Log" should {
 
     "Count all requests" in new Context {
-      logger.numberOfRequests must_== 10
+      logger.numberOfRequests(logger.allRequests) must_== 10
     }
 
     "Sum size of all responses" in new Context {
-      logger.sumSizeOfResponses must_== 249431
+      logger.sumSizeOfResponses(logger.allRequests) must_== 249431
     }
 
     "Calculate error rate for all requests" in new Context { //TODO: what about req with missin status?
-      logger.errorRate must_== 0.2
+      logger.errorRate(logger.allRequests) must_== 0.2
     }
 
     "Calculate server error rate" in new Context {
-      logger.serverErrorRate must_== 0.5
+      logger.serverErrorRate(logger.allRequests) must_== 0.5
     }
 
     "Calculate client error rate" in new Context {
-      logger.clientErrorRate must_== 0.5
+      logger.clientErrorRate(logger.allRequests) must_== 0.5
+    }
+
+    "find top 10 URLs" in new Context {
+      logger.statisticsOfTopTen must_== s"""/\t8\t230136\t0.25\n/_api/dynamicmodel\t1\t19295\t0.0\n/wpad.dat\t1\t0\t0.0"""
     }
 
   }

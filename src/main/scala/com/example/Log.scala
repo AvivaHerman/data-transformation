@@ -6,25 +6,37 @@ package com.example
 case class Log(path: String) {
 
 
-  private def requests = scala.io.Source.fromFile(path).getLines map (LogEntry(_).getRequest)
+  def allRequests = scala.io.Source.fromFile(path).getLines.map(LogEntry(_).getRequest).toList
 
-  private def groupByStatus =
+  private def groupByStatus(requests: Seq[Request]) =
     requests.map(_.resultStatus).filter(status => status != UnknownData).toList.groupBy(_.get.head)
 
-  private def numberOfClientErrors: Int = groupByStatus.get('4').getOrElse(Seq()).length
+  private def numberOfClientErrors(requests: Seq[Request]): Int = groupByStatus(requests).get('4').getOrElse(Seq()).length
 
-  private def numberOfServerErrors: Int = groupByStatus.get('5').getOrElse(Seq()).length
+  private def numberOfServerErrors(requests: Seq[Request]): Int = groupByStatus(requests).get('5').getOrElse(Seq()).length
 
-  private def numberOfErrorStatus = numberOfClientErrors + numberOfServerErrors
+  private def numberOfErrorStatus(requests: Seq[Request]) = numberOfClientErrors(requests) + numberOfServerErrors(requests)
 
-  def serverErrorRate = numberOfServerErrors.toDouble / numberOfErrorStatus.toDouble
+  def serverErrorRate(requests: Seq[Request]) = numberOfServerErrors(requests).toDouble / numberOfErrorStatus(requests).toDouble
 
-  def clientErrorRate = numberOfClientErrors.toDouble / numberOfErrorStatus.toDouble
+  def clientErrorRate(requests: Seq[Request]) = numberOfClientErrors(requests).toDouble / numberOfErrorStatus(requests).toDouble
 
-  def numberOfRequests = requests.length
+  def numberOfRequests(requests: Seq[Request]) = requests.length
 
-  def sumSizeOfResponses = requests.map(_.resultSize.get.toInt).filter(_ != None).sum
+  def sumSizeOfResponses(requests: Seq[Request]) = requests.map(_.resultSize.get.toInt).filter(_ != None).sum
 
-  def errorRate = numberOfErrorStatus.toDouble / numberOfRequests.toDouble
+  def errorRate(requests: Seq[Request]) = numberOfErrorStatus(requests).toDouble / numberOfRequests(requests).toDouble
 
+  def topTenURLs = allRequests.map(_.clientRequest.get.split(" ")(1)).toList.groupBy(identity).toList.sortBy(_._2.length).takeRight(10).reverse
+
+  def statisticsOfTopTen = {
+    for {
+      currentUrl <- topTenURLs
+      url = currentUrl._1
+      reqCount = currentUrl._2.length
+      urlRequests = allRequests.filter(_.clientRequest.get.split(" ")(1) == url)
+      respSize = sumSizeOfResponses(urlRequests)
+      urlErrorRate = errorRate(urlRequests)
+    } yield s"""$url\t$reqCount\t$respSize\t$urlErrorRate"""
+  } mkString("\n")
 }

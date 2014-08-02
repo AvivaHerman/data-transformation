@@ -29,7 +29,7 @@ case class Log(path: String) {
 
   def errorRate(requests: Seq[Request]) = numberOfErrorStatus(requests).toDouble / numberOfRequests(requests).toDouble
 
-  def topTenURLs = allRequests.filter(req => unknownData(req.clientRequest)).map(_.clientRequest.get).groupBy(identity).toList.map{ case (url, list) => (url, list.length) }.sortBy(_._2).takeRight(10).reverse
+  def topTenURLs = allRequests.filter(req => unknownData(req.clientRequest)).map(_.clientRequest.get).groupBy(identity).toList.map { case (url, list) => (url, list.length)}.sortBy(_._2).takeRight(10).reverse
 
   def statisticsOfTopTen = {
     for {
@@ -40,7 +40,20 @@ case class Log(path: String) {
       respSize = sumSizeOfResponses(urlRequests)
       urlErrorRate = errorRate(urlRequests)
     } yield s"""$url\t$reqCount\t$respSize\t$urlErrorRate"""
-  } mkString("\n")
+  } mkString ("\n")
+
+  def mostCommonIp = allRequests.filter(req => unknownData(req.host)).map(_.host.get).groupBy(identity).toList.sortBy(_._2.length).last
+
+  def statisticsOfMostCommonIP = {
+    for {
+      currentIp <- List(mostCommonIp)
+      ip = currentIp._1
+      reqCount = currentIp._2.length
+      ipRequests = allRequests.filter(_.host.get == ip)
+      respSize = sumSizeOfResponses(ipRequests)
+      ipErrorRate = errorRate(ipRequests)
+    } yield s"""$ip\t$reqCount\t$respSize\t$ipErrorRate"""
+  } mkString ("\n")
 
 
 }

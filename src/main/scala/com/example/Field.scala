@@ -29,7 +29,7 @@ class Field {
     case ResultStatus(status) => status
     case ResultSize(size) => size
     case UserAgent(agent) => agent
-    case _ => ""
+    case _ => "-"
   }
 }
 

@@ -15,7 +15,7 @@ class LogTest extends SpecificationWithJUnit {
   "Log" should {
 
     "Count all requests" in new Context {
-      logger.numberOfRequests(logger.allRequests) must_== 10
+      logger.numberOfRequests(logger.allRequests) must_== 11
     }
 
     "Sum size of all responses" in new Context {
@@ -23,7 +23,7 @@ class LogTest extends SpecificationWithJUnit {
     }
 
     "Calculate error rate for all requests" in new Context { //TODO: what about req with missin status?
-      logger.errorRate(logger.allRequests) must_== 0.2
+      logger.errorRate(logger.allRequests) must_== 2.0 / 11.0
     }
 
     "Calculate server error rate" in new Context {
@@ -35,7 +35,11 @@ class LogTest extends SpecificationWithJUnit {
     }
 
     "find top 10 URLs" in new Context {
-      logger.statisticsOfTopTen must_== s"""/\t8\t230136\t0.25\n/_api/dynamicmodel\t1\t19295\t0.0\n/wpad.dat\t1\t0\t0.0"""
+      logger.statisticsOfTopTen must_== s"""/\t8\t230136\t0.25\n/wpad.dat\t2\t0\t0.0\n/_api/dynamicmodel\t1\t19295\t0.0"""
+    }
+
+    "most common IP" in new Context {
+      logger.statisticsOfMostCommonIP must_== s"""93.89.139.5\t2\t0\t0.0"""
     }
 
   }

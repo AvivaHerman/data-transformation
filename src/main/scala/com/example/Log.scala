@@ -8,8 +8,10 @@ case class Log(path: String) {
 
   def allRequests = scala.io.Source.fromFile(path).getLines.map(LogEntry(_).getRequest).toList
 
+  private def unknownData(field: Field): Boolean = field != UnknownData
+
   private def groupByStatus(requests: Seq[Request]) =
-    requests.map(_.resultStatus).filter(status => status != UnknownData).toList.groupBy(_.get.head)
+    requests.map(_.resultStatus).filter(unknownData(_)).groupBy(_.get.head)
 
   private def numberOfClientErrors(requests: Seq[Request]): Int = groupByStatus(requests).get('4').getOrElse(Seq()).length
 
@@ -27,14 +29,14 @@ case class Log(path: String) {
 
   def errorRate(requests: Seq[Request]) = numberOfErrorStatus(requests).toDouble / numberOfRequests(requests).toDouble
 
-  def topTenURLs = allRequests.map(_.clientRequest.get.split(" ")(1)).toList.groupBy(identity).toList.sortBy(_._2.length).takeRight(10).reverse
+  def topTenURLs = allRequests.filter(req => unknownData(req.clientRequest)).map(_.clientRequest.get).groupBy(identity).toList.sortBy(_._2.length).takeRight(10).reverse
 
   def statisticsOfTopTen = {
     for {
       currentUrl <- topTenURLs
       url = currentUrl._1
       reqCount = currentUrl._2.length
-      urlRequests = allRequests.filter(_.clientRequest.get.split(" ")(1) == url)
+      urlRequests = allRequests.filter(_.clientRequest.get == url)
       respSize = sumSizeOfResponses(urlRequests)
       urlErrorRate = errorRate(urlRequests)
     } yield s"""$url\t$reqCount\t$respSize\t$urlErrorRate"""

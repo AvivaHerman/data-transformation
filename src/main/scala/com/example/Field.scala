@@ -25,7 +25,7 @@ class Field {
     case Identifier(id) => id
     case UserId(id) => id
     case Date(date) => date
-    case ClientRequest(req) => req
+    case ClientRequest(req) => req.split(" ")(1)
     case ResultStatus(status) => status
     case ResultSize(size) => size
     case UserAgent(agent) => agent

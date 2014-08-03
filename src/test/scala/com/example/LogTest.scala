@@ -42,6 +42,10 @@ class LogTest extends SpecificationWithJUnit {
       logger.statistics(logger.mostCommonIp, req => req.host.get) must_== s"""93.89.139.5\t2\t0\t0.0"""
     }
 
+    "most erroneous path" in new Context {
+      logger.erroneousPath must_== s"""/: client errors: 1, server errors: 1"""
+    }
+
   }
 
 

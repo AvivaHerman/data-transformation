@@ -5,13 +5,15 @@ package com.example
  */
 case class Log(path: String) {
 
-
   def allRequests = scala.io.Source.fromFile(path).getLines.map(LogEntry(_).getRequest).toList
 
   private def unknownData(field: Field): Boolean = field != UnknownData
 
   private def groupByStatus(requests: Seq[Request]) =
     requests.map(_.resultStatus).filter(unknownData(_)).groupBy(_.get.head)
+
+  private def groupByProperty(getProperty: Request => Field): List[(String, Int)] =
+    allRequests.filter(req => unknownData(getProperty(req))).map(getProperty(_).get).groupBy(identity).toList.map { case (property, list) => (property, list.length)}.sortBy(_._2)
 
   private def numberOfClientErrors(requests: Seq[Request]): Int = groupByStatus(requests).get('4').getOrElse(Seq()).length
 
@@ -29,12 +31,11 @@ case class Log(path: String) {
 
   def errorRate(requests: Seq[Request]) = numberOfErrorStatus(requests).toDouble / numberOfRequests(requests).toDouble
 
-  private def groupByProperty(getProperty: Request => Field): List[(String, Int)] =
-    allRequests.filter(req => unknownData(getProperty(req))).map(getProperty(_).get).groupBy(identity).toList.map { case (property, list) => (property, list.length)}.sortBy(_._2)
-
   def topTenURLs = groupByProperty(req => req.clientRequest).takeRight(10).reverse
 
   def mostCommonIp = List(groupByProperty(req => req.host).last)
+
+  def mostErroneousPath = List(groupByProperty(req => req.clientRequest).last)
 
   def statistics(list: List[(String, Int)], requestField: Request => String) = {
     for {
@@ -45,6 +46,16 @@ case class Log(path: String) {
       respSize = sumSizeOfResponses(elementRequests)
       elementErrorRate = errorRate(elementRequests)
     } yield s"""$element\t$reqCount\t$respSize\t$elementErrorRate"""
+  } mkString ("\n")
+
+  def erroneousPath = {
+    for {
+      clientRequest <- mostErroneousPath
+      path = clientRequest._1
+      requestsWithPath = allRequests.filter(req => unknownData(req.clientRequest) && req.clientRequest.get == path)
+      clientErrors = numberOfClientErrors(requestsWithPath)
+      serverErrors = numberOfServerErrors(requestsWithPath)
+    } yield s"""$path: client errors: $clientErrors, server errors: $serverErrors"""
   } mkString ("\n")
 
 }

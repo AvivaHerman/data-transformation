@@ -7,17 +7,32 @@ case class Log(path: String) {
 
   def allRequests = scala.io.Source.fromFile(path).getLines.map(LogEntry(_).getRequest).toList
 
-  private def notUnknownData(field: Field): Boolean = field != UnknownData
+  private def notUnknownData[T](field: T): Boolean = field != UnknownData
 
-  private def groupByStatus(requests: Seq[Request]) =
-    requests.map(_.resultStatus).filter(notUnknownData(_)).groupBy(_.get.head)
+  private def groupByStatus(requests: Seq[Request]) = groupByProperty(requests, req => req.resultStatus).toMap
 
-  private def groupByProperty(getProperty: Request => Field): List[(String, Int)] =
-    allRequests.filter(req => notUnknownData(getProperty(req))).map(getProperty(_).get).groupBy(identity).toList.map { case (property, list) => (property, list.length)}.sortBy(_._2)
+  private def groupByProperty[T](requests: Seq[Request], getProperty: Request => T): Seq[(String, Seq[Request])] =
+    requests
+      .filter(req => notUnknownData(getProperty(req)))
+      .groupBy {
+      getProperty(_) match {
+        case Host(ip) => ip
+        case Identifier(id) => id
+        case Date(date) => date.split(":").init.mkString(":")
+        case ClientRequest(req) => req.split(" ")(1)
+        case ResultStatus(status) => status.head.toString
+        case ResultSize(size) => size
+        case UserId(id) => id
+        case UserAgent(agent) => agent
+        case Referrer(ref) => ref
+      }
+    }
+      .toList
+      .sortBy(_._2.length)
 
-  private def numberOfClientErrors(requests: Seq[Request]): Int = groupByStatus(requests).get('4').getOrElse(Seq()).length
+  private def numberOfClientErrors(requests: Seq[Request]): Int = groupByStatus(requests).get("4").getOrElse(Seq()).length
 
-  private def numberOfServerErrors(requests: Seq[Request]): Int = groupByStatus(requests).get('5').getOrElse(Seq()).length
+  private def numberOfServerErrors(requests: Seq[Request]): Int = groupByStatus(requests).get("5").getOrElse(Seq()).length
 
   private def numberOfErrorStatus(requests: Seq[Request]) = numberOfClientErrors(requests) + numberOfServerErrors(requests)
 
@@ -27,47 +42,41 @@ case class Log(path: String) {
 
   def numberOfRequests(requests: Seq[Request]) = requests.length
 
-  def sumSizeOfResponses(requests: Seq[Request]) = requests.map(_.resultSize.get.toInt).filter(_ != None).sum
+  def sumSizeOfResponses(requests: Seq[Request]) =
+    requests
+      .filter(req => notUnknownData(req.resultSize))
+      .map {
+      _.resultSize match {
+        case ResultSize(size) => size.toInt
+      }
+    }
+      .sum
 
   def errorRate(requests: Seq[Request]) = numberOfErrorStatus(requests).toDouble / numberOfRequests(requests).toDouble
 
-  def topTenURLs = groupByProperty(req => req.clientRequest).takeRight(10).reverse
+  def topTenURLs = groupByProperty(allRequests, req => req.clientRequest).takeRight(10).reverse
 
-  def mostCommonIp = List(groupByProperty(req => req.host).last)
+  def mostCommonIp = List(groupByProperty(allRequests, req => req.host).last)
 
-  def mostErroneousPath = List(groupByProperty(req => req.clientRequest).last)
+  def mostErroneousPath = groupByProperty(allRequests, req => req.clientRequest)
+    .map { case (path, list) => (path, numberOfErrorStatus(list), numberOfClientErrors(list), numberOfServerErrors(list))}
+    .maxBy(_._2) match {
+    case (path, _, clientErrors, serverErrors) => s"""$path: client errors: $clientErrors, server errors: $serverErrors"""
+  }
 
-  def statistics(list: List[(String, Int)], requestField: Request => String) = {
+
+  def statistics(list: Seq[(String, Seq[Request])]) = {
     for {
       current <- list
-      element = current._1
-      reqCount = current._2
-      elementRequests = allRequests.filter(requestField(_) == element)
-      respSize = sumSizeOfResponses(elementRequests)
-      elementErrorRate = errorRate(elementRequests)
-    } yield s"""$element\t$reqCount\t$respSize\t$elementErrorRate"""
-  } mkString ("\n")
-
-  def erroneousPath = {
-    for {
-      clientRequest <- mostErroneousPath
-      path = clientRequest._1
-      requestsWithPath = allRequests.filter(req => notUnknownData(req.clientRequest) && req.clientRequest.get == path)
-      clientErrors = numberOfClientErrors(requestsWithPath)
-      serverErrors = numberOfServerErrors(requestsWithPath)
-    } yield s"""$path: client errors: $clientErrors, server errors: $serverErrors"""
-  } mkString ("\n")
-
-  def groupByHour = allRequests.filter(req => notUnknownData(req.date)).groupBy(req => req.date.get.split(":").init.mkString(":")).toList
-
-  def statisticsByHour = {
-    for {
-      current <- groupByHour
       element = current._1
       reqCount = current._2.length
       elementRequests = current._2
       respSize = sumSizeOfResponses(elementRequests)
       elementErrorRate = errorRate(elementRequests)
     } yield s"""$element\t$reqCount\t$respSize\t$elementErrorRate"""
-  } mkString ("\n")
+  }
+    .mkString("\n")
+
+  def groupByHour = groupByProperty(allRequests, req => req.date)
+
 }

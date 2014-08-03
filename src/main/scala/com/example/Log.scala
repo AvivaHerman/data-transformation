@@ -7,13 +7,13 @@ case class Log(path: String) {
 
   def allRequests = scala.io.Source.fromFile(path).getLines.map(LogEntry(_).getRequest).toList
 
-  private def unknownData(field: Field): Boolean = field != UnknownData
+  private def notUnknownData(field: Field): Boolean = field != UnknownData
 
   private def groupByStatus(requests: Seq[Request]) =
-    requests.map(_.resultStatus).filter(unknownData(_)).groupBy(_.get.head)
+    requests.map(_.resultStatus).filter(notUnknownData(_)).groupBy(_.get.head)
 
   private def groupByProperty(getProperty: Request => Field): List[(String, Int)] =
-    allRequests.filter(req => unknownData(getProperty(req))).map(getProperty(_).get).groupBy(identity).toList.map { case (property, list) => (property, list.length)}.sortBy(_._2)
+    allRequests.filter(req => notUnknownData(getProperty(req))).map(getProperty(_).get).groupBy(identity).toList.map { case (property, list) => (property, list.length)}.sortBy(_._2)
 
   private def numberOfClientErrors(requests: Seq[Request]): Int = groupByStatus(requests).get('4').getOrElse(Seq()).length
 
@@ -52,10 +52,22 @@ case class Log(path: String) {
     for {
       clientRequest <- mostErroneousPath
       path = clientRequest._1
-      requestsWithPath = allRequests.filter(req => unknownData(req.clientRequest) && req.clientRequest.get == path)
+      requestsWithPath = allRequests.filter(req => notUnknownData(req.clientRequest) && req.clientRequest.get == path)
       clientErrors = numberOfClientErrors(requestsWithPath)
       serverErrors = numberOfServerErrors(requestsWithPath)
     } yield s"""$path: client errors: $clientErrors, server errors: $serverErrors"""
   } mkString ("\n")
 
+  def groupByHour = allRequests.filter(req => notUnknownData(req.date)).groupBy(req => req.date.get.split(":").init.mkString(":")).toList
+
+  def statisticsByHour = {
+    for {
+      current <- groupByHour
+      element = current._1
+      reqCount = current._2.length
+      elementRequests = current._2
+      respSize = sumSizeOfResponses(elementRequests)
+      elementErrorRate = errorRate(elementRequests)
+    } yield s"""$element\t$reqCount\t$respSize\t$elementErrorRate"""
+  } mkString ("\n")
 }

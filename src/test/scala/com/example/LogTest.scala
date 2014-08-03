@@ -46,6 +46,10 @@ class LogTest extends SpecificationWithJUnit {
       logger.erroneousPath must_== s"""/: client errors: 1, server errors: 1"""
     }
 
+    "summary by hour" in new Context {
+      logger.statisticsByHour must_== s"""18/Jul/2014:06:08\t11\t249431\t${2.0/11.0}"""
+    }
+
   }
 
 

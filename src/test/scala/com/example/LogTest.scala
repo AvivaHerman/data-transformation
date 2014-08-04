@@ -50,6 +50,10 @@ class LogTest extends SpecificationWithJUnit {
       logger.statistics(logger.groupByHour) must_== s"""18/Jul/2014:06:08\t11\t249431\t${2.0/11.0}"""
     }
 
+    "summary by browser" in new Context {
+      logger.statistics(logger.groupByBrowser) must_== s"""Mozilla\t10\t213606\t0.2"""
+    }
+
   }
 
 

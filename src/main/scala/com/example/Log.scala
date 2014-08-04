@@ -7,13 +7,13 @@ case class Log(path: String) {
 
   def allRequests = scala.io.Source.fromFile(path).getLines.map(LogEntry(_).getRequest).toList
 
-  private def notUnknownData[T](field: T): Boolean = field != UnknownData
+  private def concreteData[T](data: T): Boolean = data != UnknownData
 
   private def groupByStatus(requests: Seq[Request]) = groupByProperty(requests, req => req.resultStatus).toMap
 
   private def groupByProperty[T](requests: Seq[Request], getProperty: Request => T): Seq[(String, Seq[Request])] =
     requests
-      .filter(req => notUnknownData(getProperty(req)))
+      .filter(req => concreteData(getProperty(req)))
       .groupBy {
       getProperty(_) match {
         case Host(ip) => ip
@@ -23,7 +23,7 @@ case class Log(path: String) {
         case ResultStatus(status) => status.head.toString
         case ResultSize(size) => size
         case UserId(id) => id
-        case UserAgent(agent) => agent
+        case UserAgent(agent) => agent.split("/")(0)
         case Referrer(ref) => ref
       }
     }
@@ -44,7 +44,7 @@ case class Log(path: String) {
 
   def sumSizeOfResponses(requests: Seq[Request]) =
     requests
-      .filter(req => notUnknownData(req.resultSize))
+      .filter(req => concreteData(req.resultSize))
       .map {
       _.resultSize match {
         case ResultSize(size) => size.toInt
@@ -78,5 +78,7 @@ case class Log(path: String) {
     .mkString("\n")
 
   def groupByHour = groupByProperty(allRequests, req => req.date)
+
+  def groupByBrowser = groupByProperty(allRequests, req => req.userAgent)
 
 }

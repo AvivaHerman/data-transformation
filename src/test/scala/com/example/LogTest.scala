@@ -22,7 +22,7 @@ class LogTest extends SpecificationWithJUnit {
       logger.sumSizeOfResponses(logger.allRequests) must_== 249431
     }
 
-    "Calculate error rate for all requests" in new Context { //TODO: what about req with missing status?
+    "Calculate error rate for all requests" in new Context {
       logger.errorRate(logger.allRequests) must_== 2.0 / 11.0
     }
 
